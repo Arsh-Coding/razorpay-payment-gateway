@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment Gateway</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+
+<body>
+    <h2>Razorpay Test Payment</h2>
+    <button id="pay-id">Pay ₹50</button>
+
+    <script>
+        document.getElementById("pay-id").onclick = async function () {
+            const orderResponse = await fetch("http://localhost:3000/create-order", {
+                method: "POST"
+            })
+            const orderData = await orderResponse.json();
+            console.log("Order created:", orderData);
+
+            const options = {
+                key: 'rzp_test_RygaiN3ESzHHp1',
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "Test Payment",
+                description: "Test Payment",
+                order_id: orderData.id,
+                handler: async function (response) {
+                    console.log("Payment Response:", response);
+
+                    // Verify payment
+                    const verifyResponse = await fetch("http://localhost:3000/verify-payment", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        })
+                    });
+
+                    const verifyData = await verifyResponse.json();
+                    console.log("Verification Response:", verifyData);
+
+                    if (verifyData.success) {
+                        alert("Payment Successful! ✅\nPayment ID: " + response.razorpay_payment_id);
+                    } else {
+                        alert("Payment verification failed! ❌");
+                    }
+                },
+                theme: {
+                    color: "#F37254"
+                }
+            }
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
+    </script>
+</body>
+
+</html>
